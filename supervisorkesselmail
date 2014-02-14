@@ -1,0 +1,8 @@
+[program:kesselmail]
+command=/var/KesselMail/start_kessel_mail
+directory=/var/KesselMail/
+user=root
+autostart=true
+autorestart=true
+stdout_logfile=/var/KesselMail/KesselMailStdOut
+redirect_stderr=true

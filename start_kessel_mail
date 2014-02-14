@@ -1,0 +1,8 @@
+#!/bin/bash
+RUNDIR=/var/KesselMail
+CONF=/var/KesselMail/KesselMailConf
+
+test -d $RUNDIR || mkdir -p $RUNDIR
+cd $RUNDIR
+source venv/bin/activate
+exec venv/bin/honcho -e $CONF run python KesselMail.py 
