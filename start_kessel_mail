@@ -1,6 +1,6 @@
 #!/bin/bash
 RUNDIR=/var/KesselMail
-CONF=/var/KesselMail/KesselMailConf
+CONF=/var/KesselMail/kesselmail.conf
 
 test -d $RUNDIR || mkdir -p $RUNDIR
 cd $RUNDIR
