@@ -18,7 +18,6 @@ from email.mime.application import MIMEApplication
 
 
 class KesselMail:
-
     def __init__(self,user = None, passw = None):
         self.username = user if user is not None else os.getenv("KesselMailUser")
         self.password = passw if user is not None else os.getenv("KesselMailPass")
@@ -56,6 +55,29 @@ class KesselMail:
             self.getMailAndConvertToTex()
             sleep(300) 
             
+    def getFileToSend(self,mail):
+        if mail.get_content_type() == "plain/text":
+           link = mail.get_payload()
+           filen = link.split("/")[-1]
+           tempnam = os.tempnam()
+           os.system("curl %s %s" % (link, tempnam))
+           return (filen,tempnam)
+           
+    def createSend2KindleMessage(self,files):
+        msg = MIMEMultipart()
+        msgstring = "Enclosed are the files you sent to be downloaded"
+        part1 = MIMEText(msgstring,"plain")
+        msg.attach(part1)
+        for (name,filename) in files:
+            with open(filename,"rb") as fp:
+                app = MIMEApplication(fp.read())
+                app.replace_header("Content-Type","application/x-mobipocket-ebook;\r\n\tname=%s" %(name,))
+                app.add_header("Content-Disposistion","attachment;\r\n\tname=%s" %(name,))
+                msg.attach(app)
+
+            os.remove(filename)
+        msg["Subject"] = "%s" % (",".join(map(lambda (n,f):n,files)),)
+        return msg
 
     def convMailPdfToTex(self,mail):
         if mail.get_content_type() == "application/pdf":
@@ -84,8 +106,15 @@ class KesselMail:
         msg = msg.as_string()
         hashcode = hashlib.sha224(msg).hexdigest()
         return hashcode in self.alreadySent
+
+
+    def convEpubToMobi(self,m):
+        return None
+        
+    def createConv2MobiMessage(self,files):
+        pass
+
             
-    #def getMailAndConvertToTex(self, searchQuery = '(SUBJECT "Convert to")'):
     def getMailAndConvertToTex(self, searchQuery = '(NOT SEEN)'):
         im = imaplib.IMAP4_SSL("imap.gmail.com","993")
         im.login(self.username,self.password)
@@ -96,19 +125,36 @@ class KesselMail:
             _,data = im.fetch(num,'(RFC822)')
             msg = email.message_from_string(data[0][1])
             if not self.hasBeenSent(msg):
+                payload = msg.get_payload()
+                generatedFiles = []
+                handled = False
                 if ".pdf" in msg["Subject"] or msg["Subject"] == "Convert to TeX":
-                    payload = msg.get_payload()
-                    generatedFiles = []
+                    handled = True
                     for m in payload:
-                        print m.keys()
-                        print m.values()
                         r = self.convMailPdfToTex(m)
                         if r:
+                            handled = True
                             generatedFiles.append(r)
                     msgToSend = self.createConv2TexMessage(generatedFiles)
+                #if ".epub" in msg["Subject"] or msg["Subject"] == "Convert to mobi":
+                #    for m in payload:
+                #        r = self.convEpubToMobi(m)
+                #        if r:
+                #            handled = True
+                #            generatedFiles.append(r)
+                #    msgToSend = self.createConv2MobiMessage(generatedFiles)
+                if msg["Subject"] == "Send to Kindle":
+                    for m in payload:
+                        r = self.getFileToSend(m)
+                        if r:
+                            handled = True
+                            generatedFiles.append(r)
+                    msgToSend = self.createSend2KindleMessage(generatedFiles)
+                if handled:
                     self.logger.info(msg["From"].split()[-1] + ", " + msgToSend["Subject"])
                     self.sendMail(msgToSend,msg["From"])
                     self.logAsSent(msg)
+                
         im.close()
         im.logout()
         return numFound
