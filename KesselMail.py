@@ -85,8 +85,10 @@ class KesselMail:
         hashcode = hashlib.sha224(msg).hexdigest()
         return hashcode in self.alreadySent
             
-    def getMailAndConvertToTex(self, searchQuery = '(RECENT SUBJECT "Convert to")'):
-        im = self.imap
+    def getMailAndConvertToTex(self, searchQuery = '(SUBJECT "Convert to")'):
+        im = imaplib.IMAP4_SSL("imap.gmail.com","993")
+        im.login(self.username,self.password)
+        im.select()
         _,data = im.search(None,searchQuery)
         numFound = len(data[0].split())
         for num in data[0].split():
