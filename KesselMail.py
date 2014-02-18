@@ -108,6 +108,8 @@ class KesselMail:
                     self.logger.info(msg["From"].split()[-1] + ", " + msgToSend["Subject"])
                     self.sendMail(msgToSend,msg["From"])
                     self.logAsSent(msg)
+        im.close()
+        im.logout()
         return numFound
             
 
