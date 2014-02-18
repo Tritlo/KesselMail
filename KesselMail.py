@@ -85,7 +85,8 @@ class KesselMail:
         hashcode = hashlib.sha224(msg).hexdigest()
         return hashcode in self.alreadySent
             
-    def getMailAndConvertToTex(self, searchQuery = '(SUBJECT "Convert to")'):
+    #def getMailAndConvertToTex(self, searchQuery = '(SUBJECT "Convert to")'):
+    def getMailAndConvertToTex(self, searchQuery = '(NOT SEEN)'):
         im = imaplib.IMAP4_SSL("imap.gmail.com","993")
         im.login(self.username,self.password)
         im.select()
@@ -95,7 +96,7 @@ class KesselMail:
             _,data = im.fetch(num,'(RFC822)')
             msg = email.message_from_string(data[0][1])
             if not self.hasBeenSent(msg):
-                if msg["Subject"] == "Convert to TeX":
+                if ".pdf" in msg["Subject"] or msg["Subject"] == "Convert to TeX":
                     payload = msg.get_payload()
                     generatedFiles = []
                     for m in payload:
